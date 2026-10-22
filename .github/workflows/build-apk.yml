@@ -1,0 +1,52 @@
+name: Build Sales Scope APK
+
+# Runs on GitHub's own servers, which have full internet access (unlike a
+# locked-down sandbox), so they can freely reach the Android SDK and Gradle
+# servers that a restricted environment cannot.
+on:
+  push:
+    paths:
+      - "android-app-src.zip"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Unzip Android project
+        run: |
+          rm -rf android-app
+          unzip -q android-app-src.zip -d .
+          test -d android-app/app || { echo "android-app/app not found after unzip — check android-app-src.zip layout"; exit 1; }
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Write local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android-app/local.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Build debug APK
+        working-directory: android-app
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
