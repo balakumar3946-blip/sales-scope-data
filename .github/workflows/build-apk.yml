@@ -29,11 +29,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # ubuntu-latest runners ship with the Android SDK preinstalled
+      # (platforms, build-tools, licenses already accepted) at $ANDROID_HOME —
+      # no separate SDK-install action needed, and the android-actions/setup-android
+      # action is broken against the current SDK repo anyway (tries to fetch a
+      # legacy "tools" package that no longer exists).
       - name: Write local.properties
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android-app/local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > android-app/local.properties
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
